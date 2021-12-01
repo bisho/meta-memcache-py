@@ -54,26 +54,26 @@ class MemcacheSocket:
       the most likely scenario), the buffer is reset with no cost.
     """
 
-    def __init__(self, c: socket.socket, buffer_size: int = 4096) -> None:
-        self.set_socket(c)
+    def __init__(self, conn: socket.socket, buffer_size: int = 4096) -> None:
+        self.set_socket(conn)
         self._buf = bytearray(buffer_size)
         self._buf_view = memoryview(self._buf)
 
-    def set_socket(self, c: socket.socket) -> None:
+    def set_socket(self, conn: socket.socket) -> None:
         """
         This replaces the internal socket and resets the buffer
         """
-        self._c = c
+        self._conn = conn
         self._pos = 0
         self._read = 0
 
     def close(self) -> None:
-        self._c.close()
+        self._conn.close()
         self._pos = 0
         self._read = 0
 
     def _recv_info_buffer(self) -> int:
-        read = self._c.recv_into(self._buf_view[self._read :])
+        read = self._conn.recv_into(self._buf_view[self._read :])
         self._read += read
         return read
 
@@ -89,7 +89,7 @@ class MemcacheSocket:
         buffer for the termination mark.
         """
         msg_termination_buf = bytearray(ENDL_LEN)
-        read: int = self._c.recvmsg_into(
+        read: int = self._conn.recvmsg_into(
             [sized_buf, msg_termination_buf], flags=socket.MSG_WAITALL
         )
         if read != len(sized_buf) + ENDL_LEN or msg_termination_buf == ENDL:
@@ -182,7 +182,7 @@ class MemcacheSocket:
         return self._tokenize_header(header)
 
     def sendall(self, data: Blob) -> None:
-        self._c.sendall(data)
+        self._conn.sendall(data)
 
     def get_response(
         self,
